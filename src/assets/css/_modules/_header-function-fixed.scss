@@ -1,0 +1,43 @@
+@import '../_mixins/mixins.scss';
+
+.header-function-fixed {
+  &:not(.nav-function-top) {
+    .page-header {
+      left: 0;
+      position: fixed !important;
+      right: 0;
+      top: 0;
+
+      @extend %general-animation !optional;
+    }
+
+    .page-content {
+      margin-top: $header-height;
+    }
+
+    &:not(.nav-function-fixed) {
+      .page-logo {
+        width: $nav-width;
+        position: fixed;
+        top: 0;
+        z-index: $cloud;
+
+        //@extend %fixed-header-shadow;
+      }
+
+      .page-sidebar {
+        .primary-nav {
+          margin-top: $header-height;
+        }
+      }
+
+      /* bug fix for nav hidden other than chrome...*/
+      &.desktop.nav-function-hidden {
+        .page-logo {
+          position: absolute;
+          transition: none !important;
+        }
+      }
+    }
+  }
+}

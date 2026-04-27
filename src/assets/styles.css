@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+
+:root {
+  --e-global-color-primary: #202020;
+  --e-global-color-secondary: #54595f;
+  --e-global-color-text: #ffffff;
+  --e-global-color-accent: #ffad00;
+  --e-global-typography-primary-font-family: 'neue-haas-grotesk-display';
+  --e-global-typography-secondary-font-weight: 400;
+  --e-global-typography-text-font-family: 'Montserrat';
+  --e-global-typography-text-font-size: 1rem;
+  --e-global-typography-text-font-weight: 500;
+  --e-global-typography-text-line-height: 1.75em;
+  --e-global-typography-accent-font-family: 'montserrat';
+  --e-global-typography-accent-font-size: 1rem;
+  --e-global-typography-accent-font-weight: 600;
+  --e-global-typography-accent-line-height: 1em;
+  --e-global-typography-f18acd2-font-family: 'neue-haas-grotesk-display';
+  --e-global-typography-f18acd2-font-size: 90px;
+  --e-global-typography-f18acd2-font-weight: 700;
+  --e-global-typography-f18acd2-line-height: 1.1em;
+  --e-global-typography-461c616-font-family: 'neue-haas-grotesk-display';
+  --e-global-typography-461c616-font-size: clamp(2.25rem, -3.2885rem + 8.6538vw, 4.5rem);
+  --e-global-typography-461c616-font-weight: 700;
+  --e-global-typography-461c616-line-height: 1.1em;
+  --e-global-typography-c3cc944-font-size: clamp(1.5rem, 1.2rem + 1.5vw, 3rem);
+  --e-global-typography-c3cc944-font-weight: 800;
+  --e-global-typography-c3cc944-line-height: 1.1em;
+  --e-global-typography-0fadcc4-font-size: clamp(1.3125rem, 1.125rem + 0.9375vw, 2.25rem);
+  --e-global-typography-0fadcc4-font-weight: 800;
+  --e-global-typography-0fadcc4-line-height: 1.1em;
+  --e-global-typography-a2d8aad-font-size: clamp(1.6rem, 1.2741rem + 0.6799vw, 1.75rem);
+  --e-global-typography-a2d8aad-font-weight: 700;
+  --e-global-typography-a2d8aad-line-height: 1.1em;
+  --e-global-typography-e6ede05-font-size: clamp(1.4rem, 1.1827rem + 0.4533vw, 1.5rem);
+  --e-global-typography-e6ede05-font-weight: 700;
+  --e-global-typography-e6ede05-line-height: 1.2em;
+  --e-global-typography-725e6fc-font-size: clamp(1.2rem, 1.0914rem + 0.2266vw, 1.25rem);
+  --e-global-typography-725e6fc-font-weight: 700;
+  --e-global-typography-725e6fc-line-height: 1.2em;
+  --e-global-typography-47eb6c5-font-family: 'neue-haas-grotesk-display';
+  --e-global-typography-47eb6c5-font-size: clamp(0.6875rem, 0.65rem + 0.1875vw, 0.875rem);
+  --e-global-typography-47eb6c5-font-weight: 600;
+  --e-global-typography-47eb6c5-text-transform: uppercase;
+  --e-global-typography-47eb6c5-line-height: 1em;
+  --e-global-typography-47eb6c5-letter-spacing: 3px;
+  --e-global-typography-43d24e3-font-family: 'montserrat';
+  --e-global-typography-43d24e3-font-size: 1rem;
+  --e-global-typography-43d24e3-font-weight: 700;
+  --e-global-typography-43d24e3-line-height: 1.5em;
+  --e-global-typography-40986df-font-family: 'montserrat';
+  --e-global-typography-40986df-font-size: 18px;
+  --e-global-typography-40986df-font-weight: 500;
+  --e-global-typography-40986df-line-height: 1.75em;
+  --e-global-typography-bc1a3ce-font-family: 'montserrat';
+  --e-global-typography-bc1a3ce-font-size: 0.875rem;
+  --e-global-typography-bc1a3ce-font-weight: 500;
+  --e-global-typography-bc1a3ce-line-height: 1.3rem;
+  --e-global-typography-54d608a-font-family: 'montserrat';
+  --e-global-typography-54d608a-font-size: 24px;
+  --e-global-typography-54d608a-font-weight: 500;
+  --e-global-typography-54d608a-line-height: 1.4em;
+  background-color: #1f1f1f;
+  background-image: url('https://www.getwrecked.com/wp-content/uploads/2023/05/grid.webp');
+  background-position: top left;
+  background-repeat: repeat;
+  --e-page-transition-entrance-animation: e-page-transition-fade-out;
+  --e-page-transition-exit-animation: e-page-transition-fade-in;
+  --e-page-transition-animation-duration: 500ms;
+  --e-preloader-animation-duration: 2300ms;
+  --e-preloader-delay: 0ms;
+  --e-preloader-color: #ffad00;
+  --e-preloader-size: 39px;
+}
+
+a {
+  @apply text-blue-500 hover:underline;
+}
+
+body,
+html {
+  background-color: var(--e-global-color-primary);
+  color: var(--e-global-color-text);
+
+  min-height: 100%;
+}
+
+#app {
+}
