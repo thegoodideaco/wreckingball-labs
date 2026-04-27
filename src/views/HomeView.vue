@@ -83,7 +83,14 @@ type DragState = {
 }
 
 // Renderer configuration and state
-const { camera, scene, init, mount, render, _renderer } = useThreeRenderer({
+const {
+  camera,
+  scene,
+  init,
+  mount,
+  render,
+  renderer: _renderer,
+} = useThreeRenderer({
   clearColor: '#020617',
   autoStart: false,
   camera: {
