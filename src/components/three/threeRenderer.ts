@@ -50,13 +50,21 @@ function toVector3Tuple(value: unknown): THREE.Vector3Tuple | null {
     return null
   }
 
-  const [x, y, z] = value
+  const [
+    x,
+    y,
+    z,
+  ] = value
 
   if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number') {
     return null
   }
 
-  return [x, y, z]
+  return [
+    x,
+    y,
+    z,
+  ]
 }
 
 function applyProp(target: ThreeElement, key: string, value: unknown): void {
@@ -117,44 +125,44 @@ function applyProp(target: ThreeElement, key: string, value: unknown): void {
 
 function createThreeElement(type: string): ThreeElement {
   switch (type) {
-    case 'group':
-      return new THREE.Group() as ThreeElement
-    case 'mesh':
-      return new THREE.Mesh() as ThreeElement
-    case 'ambientLight':
-    case 'ambient-light':
-    case 'ambientlight':
-      return new THREE.AmbientLight(0xffffff, 1) as ThreeElement
-    case 'directionalLight':
-    case 'directional-light':
-    case 'directionallight':
-      return new THREE.DirectionalLight(0xffffff, 1) as ThreeElement
-    case 'perspectiveCamera':
-    case 'perspective-camera':
-    case 'perspectivecamera':
-      return new THREE.PerspectiveCamera(60, 1, 0.1, 1000) as ThreeElement
-    case 'boxGeometry':
-    case 'box-geometry':
-    case 'boxgeometry':
-      return new THREE.BoxGeometry(1, 1, 1) as ThreeElement
-    case 'sphereGeometry':
-    case 'sphere-geometry':
-    case 'spheregeometry':
-      return new THREE.SphereGeometry(1, 24, 24) as ThreeElement
-    case 'planeGeometry':
-    case 'plane-geometry':
-    case 'planegeometry':
-      return new THREE.PlaneGeometry(1, 1) as ThreeElement
-    case 'meshStandardMaterial':
-    case 'mesh-standard-material':
-    case 'meshstandardmaterial':
-      return new THREE.MeshStandardMaterial() as ThreeElement
-    case 'meshBasicMaterial':
-    case 'mesh-basic-material':
-    case 'meshbasicmaterial':
-      return new THREE.MeshBasicMaterial() as ThreeElement
-    default:
-      throw new Error(`Unsupported Three element type: ${type}`)
+  case 'group':
+    return new THREE.Group() as ThreeElement
+  case 'mesh':
+    return new THREE.Mesh() as ThreeElement
+  case 'ambientLight':
+  case 'ambient-light':
+  case 'ambientlight':
+    return new THREE.AmbientLight(0xffffff, 1) as ThreeElement
+  case 'directionalLight':
+  case 'directional-light':
+  case 'directionallight':
+    return new THREE.DirectionalLight(0xffffff, 1) as ThreeElement
+  case 'perspectiveCamera':
+  case 'perspective-camera':
+  case 'perspectivecamera':
+    return new THREE.PerspectiveCamera(60, 1, 0.1, 1000) as ThreeElement
+  case 'boxGeometry':
+  case 'box-geometry':
+  case 'boxgeometry':
+    return new THREE.BoxGeometry(1, 1, 1) as ThreeElement
+  case 'sphereGeometry':
+  case 'sphere-geometry':
+  case 'spheregeometry':
+    return new THREE.SphereGeometry(1, 24, 24) as ThreeElement
+  case 'planeGeometry':
+  case 'plane-geometry':
+  case 'planegeometry':
+    return new THREE.PlaneGeometry(1, 1) as ThreeElement
+  case 'meshStandardMaterial':
+  case 'mesh-standard-material':
+  case 'meshstandardmaterial':
+    return new THREE.MeshStandardMaterial() as ThreeElement
+  case 'meshBasicMaterial':
+  case 'mesh-basic-material':
+  case 'meshbasicmaterial':
+    return new THREE.MeshBasicMaterial() as ThreeElement
+  default:
+    throw new Error(`Unsupported Three element type: ${type}`)
   }
 }
 

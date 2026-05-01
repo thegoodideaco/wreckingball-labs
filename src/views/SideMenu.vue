@@ -1,4 +1,13 @@
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const menuItems = computed(() => {
+  return router.getRoutes().map((route) => route.name)
+})
+
+const router = useRouter()
+</script>
 
 <template>
   <aside class="page-sidebar">
@@ -18,7 +27,9 @@
     </div>
     <nav id="js-primary-nav" role="navigation" class="primary-nav p-5">
       <ul id="js-nav-menu" class="nav-menu" style="margin-left: 0px">
-        <li>Physics</li>
+        <li v-for="item in menuItems" :key="item">
+          <RouterLink :to="{ name: item }" class="nav-link">{{ item }}</RouterLink>
+        </li>
       </ul>
     </nav>
   </aside>

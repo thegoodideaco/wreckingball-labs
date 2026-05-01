@@ -32,24 +32,45 @@ type CubeMeshProps = {
 }
 
 const props = withDefaults(defineProps<CubeMeshProps>(), {
-  name: 'cube-mesh',
-  position: () => [0, 0, 0],
-  rotation: () => [0, 0, 0],
-  quaternion: () => [0, 0, 0, 1],
-  scale: () => [1, 1, 1],
-  visible: true,
-  castShadow: false,
+  name:     'cube-mesh',
+  position: () => [
+    0,
+    0,
+    0,
+  ],
+  rotation: () => [
+    0,
+    0,
+    0,
+  ],
+  quaternion: () => [
+    0,
+    0,
+    0,
+    1,
+  ],
+  scale: () => [
+    1,
+    1,
+    1,
+  ],
+  visible:       true,
+  castShadow:    false,
   receiveShadow: false,
-  renderOrder: 0,
+  renderOrder:   0,
   frustumCulled: true,
-  userData: () => ({}),
-  geometryArgs: () => [1, 1, 1],
-  color: '#4cc9f0',
-  wireframe: false,
+  userData:      () => ({}),
+  geometryArgs:  () => [
+    1,
+    1,
+    1,
+  ],
+  color:       '#4cc9f0',
+  wireframe:   false,
   transparent: false,
-  opacity: 1,
-  metalness: 0.2,
-  roughness: 0.6,
+  opacity:     1,
+  metalness:   0.2,
+  roughness:   0.6,
 })
 </script>
 

@@ -11,8 +11,12 @@ type ThreeCanvasProps = {
 }
 
 const props = withDefaults(defineProps<ThreeCanvasProps>(), {
-  clearColor: '#0b1220',
-  cameraPosition: () => [0, 0, 5],
+  clearColor:     '#0b1220',
+  cameraPosition: () => [
+    0,
+    0,
+    5,
+  ],
   cameraFov: 60,
 })
 

@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script lang="ts" setup async>
 import RAPIER from '@dimforge/rapier3d'
 import * as THREE from 'three'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
@@ -16,9 +16,9 @@ const props = withDefaults(
     wreckingBallMass?: number
   }>(),
   {
-    cubeCount: 10,
+    cubeCount:        10,
     obstacleCubeSize: 3.45,
-    ropeTightness: 1.1,
+    ropeTightness:    1.1,
     wreckingBallMass: 520,
   },
 )
@@ -92,13 +92,24 @@ const {
   renderer: _renderer,
 } = useThreeRenderer({
   clearColor: '#020617',
-  autoStart: false,
-  camera: {
-    position: [0, 1.6, 3.2],
-    lookAt: [0, 0, 0],
-    fov: 90,
+  autoStart:  false,
+  camera:     {
+    position: [
+      0,
+      1.6,
+      3.2,
+    ],
+    lookAt: [
+      0,
+      0,
+      0,
+    ],
+    fov: 70,
   },
 })
+
+await _renderer.value?.init()
+console.log('WebGPU renderer initialized:', _renderer.value)
 
 // Global scene state
 let frameId = 0
@@ -144,8 +155,20 @@ const obstacleSpawnPadding = 4
 const obstacleClearRadius = 7
 const ropeAnchorSize = Math.max(ropeBoxSize * 0.4, 0.2)
 const defaultCubeColor = '#22d3ee'
-const cubeColors = [defaultCubeColor, '#38bdf8', '#67e8f9', '#7dd3fc', '#bae6fd'] as const
-const obstacleColors = ['#f59e0b', '#f97316', '#fb7185', '#ef4444', '#fdba74'] as const
+const cubeColors = [
+  defaultCubeColor,
+  '#38bdf8',
+  '#67e8f9',
+  '#7dd3fc',
+  '#bae6fd',
+] as const
+const obstacleColors = [
+  '#f59e0b',
+  '#f97316',
+  '#fb7185',
+  '#ef4444',
+  '#fdba74',
+] as const
 
 const getWreckingBallClearance = () => {
   const averageObstacleStackHeight =
@@ -157,7 +180,11 @@ const getWreckingBallClearance = () => {
 const getRopeAnchorPosition = (cubeCount: number): THREE.Vector3Tuple => {
   const wreckingBallCenterY = floorTopY + wreckingBallRadius + getWreckingBallClearance()
 
-  return [0, wreckingBallCenterY + ropeLength * (cubeCount + 1) + wreckingBallRadius, 0]
+  return [
+    0,
+    wreckingBallCenterY + ropeLength * (cubeCount + 1) + wreckingBallRadius,
+    0,
+  ]
 }
 
 const getCubePosition = (
@@ -166,25 +193,41 @@ const getCubePosition = (
   _cubeCount: number,
   ropeAnchorPosition: THREE.Vector3Tuple,
 ): THREE.Vector3Tuple => {
-  const [anchorX, anchorY, anchorZ] = ropeAnchorPosition
+  const [
+    anchorX,
+    anchorY,
+    anchorZ,
+  ] = ropeAnchorPosition
   const xOffset = anchorX
   const yOffset = anchorY - ropeLength * (index + 1)
   const zOffset = anchorZ
 
-  return [xOffset, yOffset, zOffset]
+  return [
+    xOffset,
+    yOffset,
+    zOffset,
+  ]
 }
 
 const getWreckingBallPosition = (
   cubeCount: number,
   ropeAnchorPosition: THREE.Vector3Tuple,
 ): THREE.Vector3Tuple => {
-  const [lastCubeX, lastCubeY, lastCubeZ] = getCubePosition(
+  const [
+    lastCubeX,
+    lastCubeY,
+    lastCubeZ,
+  ] = getCubePosition(
     cubeCount - 1,
     cubeCount,
     ropeAnchorPosition,
   )
 
-  return [lastCubeX, lastCubeY - ropeLength - wreckingBallRadius, lastCubeZ]
+  return [
+    lastCubeX,
+    lastCubeY - ropeLength - wreckingBallRadius,
+    lastCubeZ,
+  ]
 }
 
 const getAnchorWorldPosition = ({ mesh, ropeAnchorLocal }: PhysicsObject) =>
@@ -204,14 +247,20 @@ const getRandomStackBases = (count: number): THREE.Vector3Tuple[] => {
     const candidateZ = randomBetween(min, max)
     const isNearChain = Math.hypot(candidateX, candidateZ) < obstacleClearRadius
     const overlapsExisting = bases.some(
-      ([x, , z]) => Math.hypot(candidateX - x, candidateZ - z) < obstacleMinStackSpacing,
+      ([
+        x, , z,
+      ]) => Math.hypot(candidateX - x, candidateZ - z) < obstacleMinStackSpacing,
     )
 
     if (isNearChain || overlapsExisting) {
       continue
     }
 
-    bases.push([candidateX, floorTopY + obstacleBoxHalfExtent, candidateZ])
+    bases.push([
+      candidateX,
+      floorTopY + obstacleBoxHalfExtent,
+      candidateZ,
+    ])
   }
 
   return bases
@@ -483,12 +532,21 @@ onMounted(() => {
     }
 
     const physicsObject = {
-      dragMode: 'joint' as const,
+      dragMode:        'joint' as const,
       initialPosition: position,
-      initialRotation: [0, 0, 0, 1] as THREE.QuaternionTuple,
+      initialRotation: [
+        0,
+        0,
+        0,
+        1,
+      ] as THREE.QuaternionTuple,
       mesh,
       body,
-      ropeAnchorLocal: [0, 0, 0] as THREE.Vector3Tuple,
+      ropeAnchorLocal: [
+        0,
+        0,
+        0,
+      ] as THREE.Vector3Tuple,
     }
     physicsObjects.push(physicsObject)
 
@@ -499,11 +557,11 @@ onMounted(() => {
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(ropeAnchorSize, 24, 24),
       new THREE.MeshStandardMaterial({
-        color: '#f8fafc',
-        emissive: '#94a3b8',
+        color:             '#f8fafc',
+        emissive:          '#94a3b8',
         emissiveIntensity: 0.35,
-        metalness: 0.25,
-        roughness: 0.4,
+        metalness:         0.25,
+        roughness:         0.4,
       }),
     )
 
@@ -523,12 +581,21 @@ onMounted(() => {
     world?.createCollider(RAPIER.ColliderDesc.ball(ropeAnchorSize).setDensity(1), body)
 
     const physicsObject = {
-      dragMode: 'direct' as const,
+      dragMode:        'direct' as const,
       initialPosition: position,
-      initialRotation: [0, 0, 0, 1] as THREE.QuaternionTuple,
+      initialRotation: [
+        0,
+        0,
+        0,
+        1,
+      ] as THREE.QuaternionTuple,
       mesh,
       body,
-      ropeAnchorLocal: [0, 0, 0] as THREE.Vector3Tuple,
+      ropeAnchorLocal: [
+        0,
+        0,
+        0,
+      ] as THREE.Vector3Tuple,
     }
     physicsObjects.push(physicsObject)
 
@@ -539,7 +606,7 @@ onMounted(() => {
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(wreckingBallRadius, 32, 32),
       new THREE.MeshStandardMaterial({
-        color: '#94a3b8',
+        color:     '#94a3b8',
         metalness: 0.65,
         roughness: 0.35,
       }),
@@ -569,12 +636,21 @@ onMounted(() => {
     )
 
     const physicsObject = {
-      dragMode: 'joint' as const,
+      dragMode:        'joint' as const,
       initialPosition: position,
-      initialRotation: [0, 0, 0, 1] as THREE.QuaternionTuple,
+      initialRotation: [
+        0,
+        0,
+        0,
+        1,
+      ] as THREE.QuaternionTuple,
       mesh,
       body,
-      ropeAnchorLocal: [0, wreckingBallRadius, 0] as THREE.Vector3Tuple,
+      ropeAnchorLocal: [
+        0,
+        wreckingBallRadius,
+        0,
+      ] as THREE.Vector3Tuple,
     }
     physicsObjects.push(physicsObject)
 
@@ -596,20 +672,28 @@ onMounted(() => {
 
   const obstacleBases = getRandomStackBases(obstacleStackCount)
 
-  for (const [baseX, baseY, baseZ] of obstacleBases) {
+  for (const [
+    baseX,
+    baseY,
+    baseZ,
+  ] of obstacleBases) {
     const stackHeight = randomIntBetween(obstacleMinStackHeight, obstacleMaxStackHeight)
 
     for (let level = 0; level < stackHeight; level += 1) {
       const colorIndex = (level + Math.floor(Math.abs(baseX + baseZ))) % obstacleColors.length
       const color = obstacleColors[colorIndex] ?? obstacleColors[0]
 
-      createPhysicsBox([baseX, baseY + level * obstacleBoxSize, baseZ], color, obstacleBoxSize, {
-        angularDamping: 0.7,
-        density: 95,
-        friction: 0.9,
-        linearDamping: 0.5,
+      createPhysicsBox([
+        baseX,
+        baseY + level * obstacleBoxSize,
+        baseZ,
+      ], color, obstacleBoxSize, {
+        angularDamping:        0.7,
+        density:               95,
+        friction:              0.9,
+        linearDamping:         0.5,
         randomAngularVelocity: false,
-        restitution: 0.02,
+        restitution:           0.02,
       })
     }
   }
@@ -731,11 +815,11 @@ onMounted(() => {
 
     if (physicsObject.dragMode === 'direct') {
       dragState = {
-        body: physicsObject.body,
-        mode: 'direct',
+        body:        physicsObject.body,
+        mode:        'direct',
         targetPoint: new THREE.Vector3(hit.point.x, targetY, hit.point.z),
         targetY,
-        plane: new THREE.Plane().setFromNormalAndCoplanarPoint(
+        plane:       new THREE.Plane().setFromNormalAndCoplanarPoint(
           new THREE.Vector3(0, 1, 0),
           new THREE.Vector3(0, targetY, 0),
         ),
@@ -768,13 +852,13 @@ onMounted(() => {
 
     // Initialize drag state
     dragState = {
-      body: physicsObject.body,
+      body:        physicsObject.body,
       handleBody,
       joint,
-      mode: 'joint',
+      mode:        'joint',
       targetPoint: hit.point.clone(),
       targetY,
-      plane: new THREE.Plane().setFromNormalAndCoplanarPoint(
+      plane:       new THREE.Plane().setFromNormalAndCoplanarPoint(
         new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(0, targetY, 0),
       ),

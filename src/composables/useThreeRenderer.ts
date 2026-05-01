@@ -1,12 +1,13 @@
 import { onBeforeUnmount, shallowRef, type Ref, type ShallowRef } from 'vue'
-import * as THREE from 'three'
+
+import * as THREEGPU from 'three/webgpu'
 
 export type ThreeCameraOptions = {
   fov?: number
   near?: number
   far?: number
-  position?: THREE.Vector3Tuple
-  lookAt?: THREE.Vector3Tuple
+  position?: THREEGPU.Vector3Tuple
+  lookAt?: THREEGPU.Vector3Tuple
 }
 
 export type BaseThreeRendererOptions = {
@@ -18,23 +19,15 @@ export type BaseThreeRendererOptions = {
 export type UseThreeRendererOptions = BaseThreeRendererOptions & {
   antialias?: boolean
   alpha?: boolean
-  clearColor?: THREE.ColorRepresentation
-}
-
-export type ThreeRendererLike = {
-  domElement: HTMLCanvasElement
-  render: (scene: THREE.Scene, camera: THREE.Camera) => void
-  setSize: (width: number, height: number, updateStyle?: boolean) => void
-  setPixelRatio: (value: number) => void
-  dispose: () => void
+  clearColor?: THREEGPU.ColorRepresentation
 }
 
 export type ThreeRenderSystem = {
-  scene: ShallowRef<THREE.Scene | null>
-  camera: ShallowRef<THREE.PerspectiveCamera | null>
-  renderer: ShallowRef<THREE.WebGLRenderer | null>
+  scene: ShallowRef<THREEGPU.Scene | null>
+  camera: ShallowRef<THREEGPU.PerspectiveCamera | null>
+  renderer: ShallowRef<THREEGPU.WebGPURenderer | null>
   isRunning: Ref<boolean>
-  init: () => void
+  init: () => Promise<void>
   mount: (container: HTMLElement) => void
   start: () => void
   stop: () => void
@@ -44,11 +37,11 @@ export type ThreeRenderSystem = {
 }
 
 export abstract class BaseThreeRenderer<
-  TRenderer extends ThreeRendererLike,
+  TRenderer extends THREEGPU.WebGPURenderer,
   TOptions extends BaseThreeRendererOptions = BaseThreeRendererOptions,
 > {
-  public readonly scene = shallowRef<THREE.Scene | null>(null)
-  public readonly camera = shallowRef<THREE.PerspectiveCamera | null>(null)
+  public readonly scene = shallowRef<THREEGPU.Scene | null>(null)
+  public readonly camera = shallowRef<THREEGPU.PerspectiveCamera | null>(null)
   public readonly renderer = shallowRef<TRenderer | null>(null)
   public readonly isRunning = shallowRef(false)
 
@@ -96,31 +89,46 @@ export abstract class BaseThreeRenderer<
     // Hook for subclasses.
   }
 
-  public init(): void {
+  public async init(): Promise<void> {
     if (this.scene.value && this.camera.value && this.renderer.value) {
       return
     }
 
-    this.scene.value = new THREE.Scene()
+    this.scene.value = new THREEGPU.Scene()
 
-    const createdCamera = new THREE.PerspectiveCamera(
+    const createdCamera = new THREEGPU.PerspectiveCamera(
       this.cameraOptions.fov ?? 60,
       1,
       this.cameraOptions.near ?? 0.1,
       this.cameraOptions.far ?? 1000,
     )
 
-    const [x, y, z] = this.cameraOptions.position ?? [0, 0, 5]
+    const [
+      x,
+      y,
+      z,
+    ] = this.cameraOptions.position ?? [
+      0,
+      0,
+      5,
+    ]
     createdCamera.position.set(x, y, z)
 
     if (this.cameraOptions.lookAt) {
-      const [lx, ly, lz] = this.cameraOptions.lookAt
+      const [
+        lx,
+        ly,
+        lz,
+      ] = this.cameraOptions.lookAt
       createdCamera.lookAt(lx, ly, lz)
     }
 
     this.camera.value = createdCamera
 
     const createdRenderer = this.createRenderer()
+
+    await createdRenderer.init()
+
     this.configureRenderer(createdRenderer)
     this.renderer.value = createdRenderer
   }
@@ -211,15 +219,15 @@ export abstract class BaseThreeRenderer<
 }
 
 export class WebGLThreeRenderer extends BaseThreeRenderer<
-  THREE.WebGLRenderer,
+  THREEGPU.WebGPURenderer,
   UseThreeRendererOptions
 > {
-  protected createRenderer(): THREE.WebGLRenderer {
+  protected createRenderer(): THREEGPU.WebGPURenderer {
     const { antialias = true, alpha = false } = this.options
-    return new THREE.WebGLRenderer({ antialias, alpha })
+    return new THREEGPU.WebGPURenderer({ antialias, alpha })
   }
 
-  protected override configureRenderer(renderer: THREE.WebGLRenderer): void {
+  protected override configureRenderer(renderer: THREEGPU.WebGPURenderer): void {
     super.configureRenderer(renderer)
 
     if (this.options.clearColor !== undefined) {
@@ -236,16 +244,16 @@ export function useThreeRenderer(options: UseThreeRendererOptions = {}): ThreeRe
   })
 
   return {
-    scene: system.scene,
-    camera: system.camera,
-    renderer: system.renderer,
+    scene:     system.scene,
+    camera:    system.camera,
+    renderer:  system.renderer,
     isRunning: system.isRunning,
-    init: () => system.init(),
-    mount: (container: HTMLElement) => system.mount(container),
-    start: () => system.start(),
-    stop: () => system.stop(),
-    resize: () => system.resize(),
-    render: () => system.render(),
-    dispose: () => system.dispose(),
+    init:      () => system.init(),
+    mount:     (container: HTMLElement) => system.mount(container),
+    start:     () => system.start(),
+    stop:      () => system.stop(),
+    resize:    () => system.resize(),
+    render:    () => system.render(),
+    dispose:   () => system.dispose(),
   }
 }

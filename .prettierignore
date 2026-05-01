@@ -1,0 +1,11 @@
+# Ignore artifacts:
+dist
+storybook-static
+
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+
+# Ignore all mdx files:
+**/*.mdx
