@@ -36,10 +36,18 @@ export type ThreeRenderSystem = {
   dispose: () => void
 }
 
+export type BeforeRenderEventDetail = {
+  scene: THREEGPU.Scene
+  camera: THREEGPU.PerspectiveCamera
+  renderer: THREEGPU.WebGPURenderer
+}
+
 export abstract class BaseThreeRenderer<
   TRenderer extends THREEGPU.WebGPURenderer,
   TOptions extends BaseThreeRendererOptions = BaseThreeRendererOptions,
-> {
+> extends THREEGPU.EventDispatcher<{
+  onBeforeRender: any
+}> {
   public readonly scene = shallowRef<THREEGPU.Scene | null>(null)
   public readonly camera = shallowRef<THREEGPU.PerspectiveCamera | null>(null)
   public readonly renderer = shallowRef<TRenderer | null>(null)
@@ -57,6 +65,8 @@ export abstract class BaseThreeRenderer<
   }
 
   public constructor(options: TOptions) {
+    super()
+
     this.options = options
     this.cameraOptions = options.camera ?? {}
     this.autoStart = options.autoStart ?? false
@@ -234,10 +244,34 @@ export class WebGLThreeRenderer extends BaseThreeRenderer<
       renderer.setClearColor(this.options.clearColor)
     }
   }
+
+  protected override onBeforeFrame(): void {
+    const scene = this.scene.value
+    const camera = this.camera.value
+    const renderer = this.renderer.value
+
+    if (!scene || !camera || !renderer) {
+      return
+    }
+
+    this.dispatchEvent(
+      new CustomEvent<BeforeRenderEventDetail>('onBeforeRender', {
+        detail: {
+          scene,
+          camera,
+          renderer,
+        },
+      }),
+    )
+  }
 }
 
 export function useThreeRenderer(options: UseThreeRendererOptions = {}): ThreeRenderSystem {
   const system = new WebGLThreeRenderer(options)
+
+  system.addEventListener('onBeforeRender', ev => {
+    console.log(ev)
+  })
 
   onBeforeUnmount(() => {
     system.dispose()

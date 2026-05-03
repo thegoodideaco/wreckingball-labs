@@ -3,18 +3,25 @@
 
 import { until, useElementSize, useEventListener } from '@vueuse/core'
 import * as THREE from 'three'
-import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js'
-import { computed, ref, watch, watchEffect } from 'vue'
+import { OrbitControls } from 'three/examples/jsm/Addons.js'
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 
+import * as loaders from '@/modules/three-loaders'
 
 import matcapImage from '@/assets/img/matcap@2x.webp'
 
 import wb_glb from '@/assets/glb/wb.glb?url'
+import gsap from 'gsap'
 
 
 const scene = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-const renderer = new THREE.WebGLRenderer()
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000)
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha:     true,
+})
+
+
 
 const containerElement = ref<HTMLDivElement | null>(null)
 const containerSize = useElementSize(containerElement)
@@ -59,26 +66,18 @@ async function init() {
     renderer.render(scene, camera)
   })
 
-  const geometry = new THREE.BoxGeometry()
   const material = new THREE.MeshMatcapMaterial()
-  const cube = new THREE.Mesh(geometry, material)
-  scene.add(cube, camera)
+  scene.add(camera)
 
 
-  const textureLoader = new THREE.TextureLoader()
-  const matcapTexture = await textureLoader.loadAsync(matcapImage)
+
+  const matcapTexture = await loaders.textureLoader.loadAsync(matcapImage)
+  matcapTexture.colorSpace = THREE.SRGBColorSpace
   material.matcap  = matcapTexture
 
 
 
-
-  const glbLoader = new GLTFLoader()
-  glbLoader.dracoLoader = new DRACOLoader()
-  glbLoader.dracoLoader.setDecoderPath('/draco/')
-  glbLoader.dracoLoader.setDecoderConfig({ type: 'js' })
-
-
-  const gltf = await glbLoader.loadAsync(wb_glb)
+  const gltf = await loaders.glbLoader.loadAsync(wb_glb)
   const duck = gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh
   duck.material = material
   // duck.scale.set(0.01, 0.01, 0.01)
@@ -87,10 +86,10 @@ async function init() {
   const controls = new OrbitControls(camera, renderer.domElement)
 
   controls.enableDamping = true
-  controls.dampingFactor = 0.05
+  controls.dampingFactor = 0.1
 
 
-  camera.position.z = 5
+  camera.position.z = 15
 
 
   const ticker = new THREE.Timer()
@@ -98,42 +97,110 @@ async function init() {
 
 
   function animate() {
-    requestAnimationFrame(animate)
 
     ticker.update()
-
-    cube.rotation.x += 0.01 * ticker.getDelta() * 60
-    cube.rotation.y += 0.01 * ticker.getDelta() * 60
 
     renderer.render(scene, camera)
 
     controls.update()
   }
-  animate()
+
+  renderer.setAnimationLoop(animate)
 
 
 
 
+  Object.assign(window, {
+    scene,
+    camera,
+    renderer,
+    duck,
+  })
+
+
+  return () => {
+
+
+    renderer.setAnimationLoop(null)
+
+    renderer.dispose()
+
+    controls.disconnect()
+    controls.dispose()
+
+    scene.clear()
+
+    delete (window as any).scene
+    delete (window as any).camera
+    delete (window as any).renderer
+    delete (window as any).duck
+
+  }
 
 
 
 
 }
 
-init()
+
+
+async function animate() {
+  const ball = scene.getObjectByProperty('isMesh', true) as THREE.Mesh
+
+
+  gsap.fromTo(ball!.position,
+    {
+    // x:        Math.PI * 2,
+    // y:        Math.PI * 2,
+      z: camera.position.z,
+    },
+    {
+      z:        0,
+      duration: 2,
+      ease:     'expo.out',
+    },
+  )
+
+  gsap.to(ball!.rotation, {
+    y:        Math.PI * 2,
+    duration: 6,
+    ease:     'none',
+    repeat:   -1,
+  })
+
+}
+
+let _cleanup: (() => void) | null = null
+
+init().then((cleanup) => {
+  _cleanup = cleanup
+  animate()
+})
+
+
+onBeforeUnmount(() => {
+  _cleanup?.()
+})
 
 
 </script>
 
 <template>
-  <div ref="containerElement">
+  <div>
+    <div ref="containerElement" class="w-full h-full absolute">
+    </div>
+
+
+    <div class="overlay">
+      <span>wreckingball</span>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 ::v-deep(canvas) {
   display: block;
-  background-color: purple;
+  background: url('@/assets/img/grid.webp') repeat fixed;
   position: absolute;
   width: 100%;
   height: 100%;

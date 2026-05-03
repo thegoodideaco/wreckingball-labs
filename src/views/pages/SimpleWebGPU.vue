@@ -2,9 +2,9 @@
 
 
 import { until, useElementSize, useEventListener } from '@vueuse/core'
-import * as THREE from 'three/webgpu'
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js'
-import { computed, ref, watch, watchEffect } from 'vue'
+import * as THREE from 'three/webgpu'
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 
 
 import matcapImage from '@/assets/img/matcap@2x.webp'
@@ -69,6 +69,7 @@ async function init() {
 
   const textureLoader = new THREE.TextureLoader()
   const matcapTexture = await textureLoader.loadAsync(matcapImage)
+  matcapTexture.colorSpace = THREE.SRGBColorSpace
   material.matcap  = matcapTexture
 
 
@@ -81,10 +82,10 @@ async function init() {
 
 
   const gltf = await glbLoader.loadAsync(wb_glb)
-  const duck = gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh
-  duck.material = material
+  const wreckingBall = gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh
+  wreckingBall.material = material
   // duck.scale.set(0.01, 0.01, 0.01)
-  scene.add(duck)
+  scene.add(wreckingBall)
 
   const controls = new OrbitControls(camera, renderer.domElement)
 
@@ -100,13 +101,20 @@ async function init() {
 
 
   function animate() {
-    requestAnimationFrame(animate)
 
     ticker.update()
 
-    duck.rotation.x += 0.011 * ticker.getDelta() * 60
-    duck.rotation.y += 0.021 * ticker.getDelta() * 60
-    duck.rotation.z += 0.001 * ticker.getDelta() * 60
+    const speed = {
+      x: 0.011,
+      y: 0.021,
+      z: 0.001,
+    }
+
+    const speedScale = .1
+
+    wreckingBall.rotation.x += speed.x * speedScale * ticker.getDelta() * 60
+    wreckingBall.rotation.y += speed.y * speedScale * ticker.getDelta() * 60
+    wreckingBall.rotation.z += speed.z * speedScale * ticker.getDelta() * 60
 
     renderer.render(scene, camera)
 
@@ -114,24 +122,44 @@ async function init() {
   }
 
 
-  animate()
+  renderer.setAnimationLoop(animate)
 
   Object.assign(window, {
     scene,
     camera,
     renderer,
-    duck,
+    wreckingBall,
   })
 
 
 
+  return () => {
 
+    renderer.setAnimationLoop(null)
+    controls.disconnect()
+    controls.enabled = false
+    controls.dispose()
+
+    renderer.dispose()
+    scene.clear()
+    delete (window as any).scene
+    delete (window as any).camera
+    delete (window as any).renderer
+    delete (window as any).wreckingBall
+  }
 
 
 }
 
-init()
+let _cleanup : (() => void) | null = null
 
+init().then((cleanup) => {
+  _cleanup = cleanup
+})
+
+onBeforeUnmount(() => {
+  _cleanup?.()
+})
 
 </script>
 

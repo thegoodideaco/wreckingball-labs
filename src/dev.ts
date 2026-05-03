@@ -2,7 +2,7 @@ import gsap from 'gsap'
 
 import * as THREE from 'three'
 import * as vue from 'vue'
-
+import RAPIER from '@dimforge/rapier3d'
 import * as vueUse from '@vueuse/core'
 import { usePane } from '@/composables/usePane'
 
@@ -12,6 +12,8 @@ import * as THREE_ADDONS from 'three/addons'
 
 import * as THREE_GPU from 'three/webgpu'
 import { useTicker } from './composables/useTicker'
+
+import * as physics from '@/modules/physics'
 
 function htmlTableToMarkdown(tableInput: string | HTMLTableElement): string {
   // Accept either HTML string or DOM element
@@ -56,4 +58,6 @@ export default {
   usePane,
   tsl,
   htmlTableToMarkdown,
+  RAPIER,
+  physics,
 }
