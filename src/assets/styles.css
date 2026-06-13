@@ -1,5 +1,17 @@
 @import 'tailwindcss';
 
+@theme {
+  --font-sans: "neue-haas-grotesk-display";
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  /* ... */
+
+  --font-weight: 700;
+}
+
+
+
+
 :root {
   --e-global-color-primary: #202020;
   --e-global-color-secondary: #54595f;

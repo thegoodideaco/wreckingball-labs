@@ -3,15 +3,42 @@ import WebfontLoader from 'webfontloader'
 
 export const fontsLoaded = ref(false)
 
+const icons = [
+  'app_shortcut',
+  'close',
+  'closed_caption',
+  'closed_caption_disabled',
+  'description',
+  'fullscreen',
+  'fullscreen_enter',
+  'fullscreen_exit',
+  'menu_open',
+  'pause',
+  'play',
+  'play_arrow',
+  'replay',
+  'replay_10',
+  'rewind',
+  'settings',
+  'volume_down',
+  'volume_mute',
+  'volume_off',
+  'volume_up',
+  'arrow_drop_down',
+  'translate',
+  'menu',
+].sort()
+
+
+
+
 WebfontLoader.load({
-  google: {
-    families: ['Inter:400,500,600,700,800,900'],
-  },
+
   custom: {
-    urls:        ['https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=chevron_left,chevron_right'],
-    families:    ['Material Symbols Outlined'],
+    families:    ['neue-haas-grotesk-display'],
+    urls:        ['https://use.typekit.net/kiw1gew.css'],
     testStrings: {
-      'Material Symbols Outlined': 'chevron_left chevron_right',
+      'neue-haas-grotesk-display': '<div style="font-weight: 600">Wreckingball</div>',
     },
   },
   active() {

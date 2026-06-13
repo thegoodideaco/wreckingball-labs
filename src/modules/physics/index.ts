@@ -1,5 +1,5 @@
 import RAPIER from '@dimforge/rapier3d'
-import { BufferGeometry, Object3D, Vector3 } from 'three'
+import { BufferGeometry, Object3D, Vector3, type Scene } from 'three'
 
 export interface CreateBodyOptions {
   isStatic?: boolean
@@ -37,9 +37,9 @@ function extractGeometry(source: Object3D | BufferGeometry): BufferGeometry | nu
 
 export class PhysicsEngine {
   world: RAPIER.World
-  scene: import('three').Scene
+  scene: Scene
   extractGeometry: (source: Object3D | BufferGeometry) => BufferGeometry | null
-  constructor(scene: import('three').Scene) {
+  constructor(scene: Scene) {
     // Initialize physics engine here
 
     const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 })

@@ -1,18 +1,22 @@
 <script lang="ts" setup>
-
-
 import { until, useElementSize, useEventListener } from '@vueuse/core'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/Addons.js'
+import { Line2, LineGeometry, LineSegments2, LineMaterial, LineSegmentsGeometry, OrbitControls } from 'three/examples/jsm/Addons.js'
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
+
+import * as RAPIER from '@dimforge/rapier3d'
 
 import * as loaders from '@/modules/three-loaders'
 
 import matcapImage from '@/assets/img/matcap@2x.webp'
 
 import wb_glb from '@/assets/glb/wb.glb?url'
+import VLink from '@/components/VLink.vue'
 import gsap from 'gsap'
+import { SplitText } from 'gsap/SplitText'
+import { usePane } from '@/composables/usePane'
 
+gsap.registerPlugin(SplitText)
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000)
@@ -21,12 +25,9 @@ const renderer = new THREE.WebGLRenderer({
   alpha:     true,
 })
 
-
-
 const containerElement = ref<HTMLDivElement | null>(null)
+const overlayElement = ref<HTMLDivElement | null>(null)
 const containerSize = useElementSize(containerElement)
-
-
 
 async function init() {
   await until(containerElement).not.toBeNull()
@@ -36,23 +37,21 @@ async function init() {
   containerSize.width.value = containerElement.value!.clientWidth
   containerSize.height.value = containerElement.value!.clientHeight
 
-
-
-  watch([
-    containerSize.width,
-    containerSize.height,
-  ], () => {
-
-
-    renderer.setSize(containerSize.width.value, containerSize.height.value)
-    renderer.render(scene, camera)
-  }, {
-    immediate: true,
-  })
-
+  watch(
+    [
+      containerSize.width,
+      containerSize.height,
+    ],
+    () => {
+      renderer.setSize(containerSize.width.value, containerSize.height.value)
+      renderer.render(scene, camera)
+    },
+    {
+      immediate: true,
+    },
+  )
 
   containerElement.value?.appendChild(renderer.domElement)
-
 
   const aspect = computed(() => containerSize.width.value / containerSize.height.value)
   watchEffect(() => {
@@ -60,22 +59,16 @@ async function init() {
     camera.updateProjectionMatrix()
   })
 
-
   useEventListener(window, 'resize', () => {
-
     renderer.render(scene, camera)
   })
 
   const material = new THREE.MeshMatcapMaterial()
   scene.add(camera)
 
-
-
   const matcapTexture = await loaders.textureLoader.loadAsync(matcapImage)
   matcapTexture.colorSpace = THREE.SRGBColorSpace
-  material.matcap  = matcapTexture
-
-
+  material.matcap = matcapTexture
 
   const gltf = await loaders.glbLoader.loadAsync(wb_glb)
   const duck = gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh
@@ -88,39 +81,154 @@ async function init() {
   controls.enableDamping = true
   controls.dampingFactor = 0.1
 
-
   camera.position.z = 15
 
+  const physics = initPhysics()
+
+  const ballP = generateBodyFromGeometry(physics.world, duck)
+
+  if (ballP) {
+    const { body, collider } = ballP
+    collider.setDensity(0.1)
+    collider.setRestitution(0)
+    body.recomputeMassPropertiesFromColliders()
+    body.setGravityScale(10, true)
+    body.setLinearDamping(0)
+    body.setAngularDamping(0)
+  }
+
+  duck.userData.physics = ballP
+
+
+  physics.chain.appendSegment(0.4, duck.userData.physics.body, 1.25)
+  const chainLine = physics.chain.createRopeMesh()
+
+
+  duck.material.transparent = true
+  duck.material.opacity = .6
+
+
+  // physics.chain.bodies.splice(physics.chain.bodies.length - 1)
+
+  physics.createFloor(physics.world)
 
   const ticker = new THREE.Timer()
   ticker.connect(document)
 
-
-  function animate() {
-
+  function step() {
     ticker.update()
+
+    physics.world.step()
+    physics.update()
+    chainLine.update()
+    physics.syncMeshWithBody(duck, duck.userData.physics.body)
 
     renderer.render(scene, camera)
 
     controls.update()
   }
 
-  renderer.setAnimationLoop(animate)
-
-
-
+  renderer.setAnimationLoop(step)
 
   Object.assign(window, {
     scene,
     camera,
     renderer,
     duck,
+    controls,
+    physics,
   })
 
+  function setupDebug() {
+    const pane = usePane({
+      title: 'Wreckingball Labs Debug',
+    })
 
+    pane.addBinding(physics.debugMesh, 'visible', {
+      label: 'Show Physics Debug',
+    })
+
+    const damping = {
+      get linear() {
+        return physics.chain.getLinearDamping()
+      },
+      set linear(value: number) {
+        physics.chain.setLinearDamping(value)
+        duck.userData.physics.body.setLinearDamping(value, true)
+      },
+      get angular() {
+        return physics.chain.getAngularDamping()
+      },
+      set angular(value: number) {
+        physics.chain.setAngularDamping(value)
+        duck.userData.physics.body.setAngularDamping(value, true)
+      },
+
+      get gravScale() {
+        return physics.chain.bodies[0]?.gravityScale() ?? 0
+      },
+
+      set gravScale(value: number) {
+        physics.chain.bodies.forEach((body) => body.setGravityScale(value, true))
+        duck.userData.physics.body.setGravityScale(value, true)
+      },
+
+      get density() {
+        return physics.chain.colliders[0]?.restitution() ?? 0
+      },
+
+      set density(value: number) {
+        physics.chain.colliders.forEach((collider) => {
+          // collider.setDensity(value)
+          collider.setRestitution(value)
+          const body = collider.parent()
+          body?.recomputeMassPropertiesFromColliders()
+        })
+        // duck.userData.physics.collider.setDensity(value)
+        // duck.userData.physics.body.recomputeMassPropertiesFromColliders()
+      },
+    }
+
+    pane.addBinding(damping, 'linear', {
+      label: 'Linear Damping',
+      min:   0,
+      max:   5,
+      step:  0.01,
+    })
+    pane.addBinding(damping, 'angular', {
+      label: 'Angular Damping',
+      min:   0,
+      max:   5,
+      step:  0.01,
+    })
+    pane.addBinding(damping, 'gravScale', {
+      label: 'Gravity Scale',
+      min:   0,
+      max:   20,
+      step:  0.1,
+    })
+
+    pane.addBinding(chainLine.lineMesh.material, 'linewidth', {
+      label: 'Chain Line Width',
+      min:   0.01,
+      max:   0.5,
+      step:  0.01,
+    })
+
+    pane.addBinding(damping, 'density', {
+      label: 'Density',
+      min:   0.01,
+      max:   10,
+      step:  0.01,
+    })
+  }
+
+  setupDebug()
+
+  /**
+   * Cleanup function to dispose of Three.js resources and event listeners when the component is unmounted
+   */
   return () => {
-
-
     renderer.setAnimationLoop(null)
 
     renderer.dispose()
@@ -134,40 +242,461 @@ async function init() {
     delete (window as any).camera
     delete (window as any).renderer
     delete (window as any).duck
-
+    delete (window as any).controls
   }
-
-
-
-
 }
 
+function initPhysics() {
+  const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 })
+
+  const debugMesh = new THREE.LineSegments(
+    new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({ color: 0xff0000 }),
+  )
+  debugMesh.raycast = () => null // disable raycasting on the debug mesh
+
+  scene.add(debugMesh)
+
+  const update = () => {
+    if (debugMesh.visible === false) return
+
+    // const bodies = world.bodies
+    const geometry = debugMesh.geometry as THREE.BufferGeometry
+
+    const { vertices, colors } = world.debugRender()
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
+    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3))
+  }
+
+  const chain = createWreckingballJointChain(world, new THREE.Vector3(0, 15, 0), .25, 15)
+
+  const mouseCollision = createMouseCollision(world)
+  chain.anim.pause(chain.anim.duration() * 0.5, false)
+  return {
+    world,
+    debugMesh,
+    update,
+    createFloor,
+    addSphere,
+    generateBodyFromGeometry,
+    createWreckingballJointChain,
+    syncMeshWithBody,
+    chain,
+    mouseCollision,
+    createMouseCollision,
+  }
+}
+
+function createFloor(world: RAPIER.World) {
+  const floorBody = world.createRigidBody(RAPIER.RigidBodyDesc.fixed())
+
+  const floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(10, 0.5, 10), floorBody)
+
+  const floorMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(20, 1, 20),
+    new THREE.MeshPhongMaterial({ color: 0x808080 }),
+  )
+  floorMesh.position.set(0, 0, 0)
+  scene.add(floorMesh)
+
+  floorMesh.userData.physics = {
+    body:     floorBody,
+    collider: floorCollider,
+  }
+
+  return floorMesh
+}
+
+function addSphere(world: RAPIER.World, position: THREE.Vector3 = new THREE.Vector3(0, 5, 0)) {
+  const radius = 0.5
+
+  const sphereBody = world.createRigidBody(
+    RAPIER.RigidBodyDesc.dynamic().setTranslation(position.x, position.y, position.z),
+  )
+
+  const sphereCollider = world.createCollider(
+    RAPIER.ColliderDesc.ball(radius).setRestitution(0.7),
+    sphereBody,
+  )
+
+  const sphereMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 32, 32),
+    new THREE.MeshPhongMaterial({ color: 0xff0000 }),
+  )
+  sphereMesh.position.copy(position)
+  scene.add(sphereMesh)
+
+  sphereMesh.userData.physics = {
+    body:     sphereBody,
+    collider: sphereCollider,
+  }
+
+  return sphereMesh
+}
+
+function generateBodyFromGeometry(world: RAPIER.World, mesh: THREE.Mesh) {
+  const geometry = mesh.geometry as THREE.BufferGeometry
+
+  const positionAttribute = geometry.getAttribute('position') as THREE.BufferAttribute
+  const vertices = Float32Array.from(positionAttribute.array)
+
+  const colliderDesc = RAPIER.ColliderDesc.convexHull(vertices)
+
+  if (colliderDesc === null) {
+    console.warn('Failed to create convex hull collider from geometry')
+    return null
+  }
+
+  const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic())
+  const collider = world.createCollider(colliderDesc, body)
+
+  return {
+    body,
+    collider,
+  }
+}
+
+function createWreckingballJointChain(
+  world: RAPIER.World,
+  anchor: THREE.Vector3,
+  segmentLength = 1,
+  segments = 5,
+  lastBody: RAPIER.RigidBody | null = null,
+) {
+  const bodies: RAPIER.RigidBody[] = []
+  const colliders: RAPIER.Collider[] = []
+  const joints: RAPIER.ImpulseJoint[] = []
+
+  let previousBody: RAPIER.RigidBody | null = null
+
+  for (let i = 0; i < segments; i++) {
+    appendSegment(segmentLength)
+  }
+
+  if (lastBody) {
+    appendSegment(segmentLength, lastBody)
+  }
+
+  const anchorVec = new THREE.Vector3(anchor.x, anchor.y, anchor.z)
+
+  const anim = gsap.fromTo(
+    anchorVec,
+    {
+      x: anchor.x + 10,
+      y: anchor.y,
+      z: anchor.z,
+    },
+    {
+      x:        anchor.x - 10,
+      duration: 3,
+      ease:     'power1.inOut',
+      yoyo:     true,
+      repeat:   -1,
+      onUpdate: () => {
+        const firstBody = bodies[0]
+        if (firstBody) {
+          firstBody.setNextKinematicTranslation({ x: anchorVec.x, y: anchorVec.y, z: anchorVec.z })
+        }
+      },
+      paused: true,
+    },
+  )
+
+  function appendSegment(
+    length = segmentLength,
+    body: RAPIER.RigidBody | null = null,
+    jointY: number = 0,
+  ) {
+    const _body =
+      body ||
+      world.createRigidBody(
+        (previousBody
+          ? RAPIER.RigidBodyDesc.dynamic()
+          : RAPIER.RigidBodyDesc.kinematicPositionBased()
+        )
+
+          .setCanSleep(true)
+          .setAngularDamping(0.5)
+          .setGravityScale(10)
+          .setLinearDamping(0.1),
+      )
+
+    if (previousBody) {
+      const prevTranslation = previousBody.translation()
+      _body.setTranslation(
+        { x: prevTranslation.x, y: prevTranslation.y - length, z: prevTranslation.z },
+        true,
+      )
+    } else {
+      _body.setTranslation({ x: anchor.x, y: anchor.y, z: anchor.z }, true)
+    }
+
+    const collider = body?.collider(0) ?? world.createCollider(RAPIER.ColliderDesc.ball(segmentLength * 0.5), _body)
+
+    collider.setFriction(0)
+    collider.setRestitution(0)
+    colliders.push(collider)
+
+    // collider.setMass(5.01)
+
+    bodies.push(_body)
+
+    if (previousBody) {
+      // const isFirstJoint = joints.length === 0
+      const jointData = RAPIER.JointData.rope(
+        length,
+        { x: 0, y: 0, z: 0 },
+        { x: 0, y: jointY, z: 0 },
+      )
+
+      jointData.anchor1.y = 0
+
+      jointData.stiffness = 100
+
+      jointData.anchor2.y = jointY
+
+      jointData.damping = 0.5
+
+      jointData.limitsEnabled = true
+      // jointData.limits = [
+      //   0,
+      //   0.45,
+      // ] // min and max distance between the two bodies
+      // jointData.minLength = 0.45
+
+      // jointData.damping = .1
+
+      const joint = world.createImpulseJoint(jointData, previousBody, _body, true)
+
+      // joint.setContactsEnabled(false)
+
+      joints.push(joint)
+    }
+
+    previousBody = _body
+  }
+
+  function getLinearDamping() {
+    return bodies[0]?.linearDamping() ?? 0
+  }
+
+  function getAngularDamping() {
+    return bodies[0]?.angularDamping() ?? 0
+  }
+
+  function setLinearDamping(damping: number) {
+    bodies.forEach((body) => body.setLinearDamping(damping))
+  }
+
+  function setAngularDamping(damping: number) {
+    bodies.forEach((body) => body.setAngularDamping(damping))
+  }
+
+  function createRopeMesh() {
 
 
+    // positions is a flat array of xyz of each body in the chain, so its length is joints.length + 1 (for the last body) times 3 (for x, y, z)
+    const positions = new Float32Array((joints.length) * 3)
+    const posAttribute = new THREE.Float32BufferAttribute(positions, 3)
+
+    const posVec = new THREE.Vector3()
+
+    for (let i = 0; i < joints.length; i++) {
+      const joint = joints[i]!
+      const bodyA = joint.body1()
+      const bodyB = joint.body2()
+
+      const posA = bodyA.translation()
+      const posB = bodyB.translation()
+
+      const offsetA = joint.anchor1()
+      const offsetB = joint.anchor2()
+
+      posVec.copy(posA).add(offsetA)
+
+
+      positions.set([
+        posVec.x,
+        posVec.y,
+        posVec.z,
+      ], i * 3)
+    }
+
+    const geometry = new LineGeometry()
+    geometry.setPositions(positions)
+
+    const lineMesh = new Line2(
+      geometry,
+      new LineMaterial({ color: 'white', linewidth: 0.1, worldUnits: true }),
+    )
+
+    lineMesh.computeLineDistances()
+
+    scene.add(lineMesh)
+
+    function update() {
+      for (let i = 0; i < joints.length; i++) {
+        const joint = joints[i]!
+        const bodyA = joint.body1()
+        const bodyB = joint.body2()
+
+        const posA = bodyA.translation()
+        const posB = bodyB.translation()
+
+        const offsetA = joint.anchor1()
+        const offsetB = joint.anchor2()
+
+        posVec.copy(posB).add(offsetB)
+
+
+        positions.set([
+          posVec.x,
+          posVec.y,
+          posVec.z,
+        ], i * 3)
+
+        geometry.setPositions(positions)
+      }
+    }
+
+    return {
+      lineMesh,
+      update,
+    }
+  }
+
+  return {
+    bodies,
+    colliders,
+    joints,
+    anim,
+    appendSegment,
+    getLinearDamping,
+    getAngularDamping,
+    setLinearDamping,
+    setAngularDamping,
+    createRopeMesh,
+  }
+}
+
+function syncMeshWithBody(mesh: THREE.Mesh, body: RAPIER.RigidBody) {
+  mesh.position.copy(body.translation())
+  mesh.quaternion.copy(body.rotation())
+}
+
+/**
+ * animates the wreckingball intro when the pages load
+ */
 async function animate() {
   const ball = scene.getObjectByProperty('isMesh', true) as THREE.Mesh
 
+  const timeline = gsap.timeline()
 
-  gsap.fromTo(ball!.position,
+  timeline.fromTo(
+    ball!.position,
     {
-    // x:        Math.PI * 2,
-    // y:        Math.PI * 2,
-      z: camera.position.z,
+      // x:        Math.PI * 2,
+      // y:        Math.PI * 2,
+      x: camera.position.z,
     },
     {
-      z:        0,
-      duration: 2,
+      x:        0,
+      duration: 3,
       ease:     'expo.out',
     },
   )
 
-  gsap.to(ball!.rotation, {
-    y:        Math.PI * 2,
-    duration: 6,
-    ease:     'none',
-    repeat:   -1,
+  // timeline.to(
+  //   ball!.rotation,
+  //   {
+  //     y:        Math.PI * 2,
+  //     duration: 6,
+  //     ease:     'none',
+  //     repeat:   -1,
+  //   },
+  //   1,
+  // )
+
+  // split elements with the class "split" into words and characters
+  const split = SplitText.create(overlayElement.value!.querySelector('h1'), {
+    type: 'words, chars',
+    mask: 'words',
   })
 
+  // now animate the characters in a staggered fashion
+  return await timeline.from(
+    split.words,
+    {
+      duration:  2,
+      y:         50, // animate from 100px below
+      autoAlpha: 0, // fade in from opacity: 0 and visibility: hidden
+      stagger:   0.1, // 0.05 seconds between each
+      ease:      'elastic.out(2, 0.45)', // elastic ease for a bouncy effect
+    },
+    2,
+  )
+}
+
+function createMouseCollision(world: RAPIER.World) {
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(20, 20),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 }),
+  )
+
+  plane.visible = false
+
+  const mouseHelper = new THREE.Mesh(
+    new THREE.SphereGeometry(0.01, 16, 16),
+    new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
+  )
+  scene.add(mouseHelper)
+
+  const raycaster = new THREE.Raycaster()
+
+  const mouseBody = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicPositionBased())
+  world.createCollider(RAPIER.ColliderDesc.ball(0.01), mouseBody)
+
+  mouseBody.enableCcd(true)
+  renderer.domElement.addEventListener('mousemove', (event) => {
+    const mouse = new THREE.Vector2(
+      (event.offsetX / renderer.domElement.clientWidth) * 2 - 1,
+      -(event.offsetY / renderer.domElement.clientHeight) * 2 + 1,
+    )
+
+    raycaster.setFromCamera(mouse, camera)
+
+    const intersects = raycaster.intersectObject(plane, true)
+
+    mouseBody.setEnabled(intersects.length > 0)
+    mouseBody.collider(0)?.setEnabled(intersects.length > 0)
+
+    if (intersects.length > 0) {
+      const point = intersects[0]!.point
+      mouseHelper.position.copy(point)
+      mouseBody.setNextKinematicTranslation(point)
+
+      const vel = new THREE.Vector3().subVectors(point, mouseBody.translation()).multiplyScalar(60)
+
+      mouseBody.setNextKinematicRotation(mouseBody.rotation())
+
+      vel.copy(mouseBody.linvel()).multiplyScalar(0.3)
+
+      // mouseBody.setLinvel(vel, true)
+      // mouseBody.setGravityScale(10, true)
+    }
+
+    // console.log(intersects)
+  })
+
+  scene.add(plane)
+
+  return {
+    plane,
+    raycaster,
+    mouseBody,
+    mouseHelper,
+  }
 }
 
 let _cleanup: (() => void) | null = null
@@ -177,22 +706,22 @@ init().then((cleanup) => {
   animate()
 })
 
-
 onBeforeUnmount(() => {
   _cleanup?.()
 })
-
-
 </script>
 
 <template>
   <div>
-    <div ref="containerElement" class="w-full h-full absolute">
-    </div>
+    <div ref="containerElement" class="w-full h-full absolute"></div>
 
-
-    <div class="overlay">
-      <span>wreckingball</span>
+    <div class="overlay" ref="overlayElement">
+      <div class="inline-block">
+        <h1 class="text-6xl font-bold max-w-2xl">
+          Hello! welcome to <strong class="text-yellow-500">Wreckingball Labs</strong>
+        </h1>
+        <VLink href="/content"> Play </VLink>
+      </div>
     </div>
   </div>
 </template>
