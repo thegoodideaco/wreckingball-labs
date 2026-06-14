@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { until, useElementSize, useEventListener } from '@vueuse/core'
 import * as THREE from 'three'
-import { Line2, LineGeometry, LineSegments2, LineMaterial, LineSegmentsGeometry, OrbitControls } from 'three/examples/jsm/Addons.js'
+import { Line2, LineGeometry, LineMaterial, OrbitControls } from 'three/examples/jsm/Addons.js'
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 
 import * as RAPIER from '@dimforge/rapier3d'
@@ -12,9 +12,9 @@ import matcapImage from '@/assets/img/matcap@2x.webp'
 
 import wb_glb from '@/assets/glb/wb.glb?url'
 import VLink from '@/components/VLink.vue'
+import { usePane } from '@/composables/usePane'
 import gsap from 'gsap'
 import { SplitText } from 'gsap/SplitText'
-import { usePane } from '@/composables/usePane'
 
 gsap.registerPlugin(SplitText)
 
@@ -100,12 +100,12 @@ async function init() {
   duck.userData.physics = ballP
 
 
-  physics.chain.appendSegment(0.4, duck.userData.physics.body, 1.25)
+  physics.chain.appendSegment(0.4, duck.userData.physics.body, 1.2)
   const chainLine = physics.chain.createRopeMesh()
 
 
-  duck.material.transparent = true
-  duck.material.opacity = .6
+  // duck.material.transparent = true
+  // duck.material.opacity = .6
 
 
   // physics.chain.bodies.splice(physics.chain.bodies.length - 1)
@@ -417,9 +417,9 @@ function createWreckingballJointChain(
         )
 
           .setCanSleep(true)
-          .setAngularDamping(0.5)
+          .setAngularDamping(3.21)
           .setGravityScale(10)
-          .setLinearDamping(0.1),
+          .setLinearDamping(3.26),
       )
 
     if (previousBody) {
@@ -502,33 +502,34 @@ function createWreckingballJointChain(
 
     const posVec = new THREE.Vector3()
 
-    for (let i = 0; i < joints.length; i++) {
-      const joint = joints[i]!
-      const bodyA = joint.body1()
-      const bodyB = joint.body2()
+    // for (let i = 0; i < joints.length; i++) {
+    //   const joint = joints[i]!
+    //   const bodyA = joint.body1()
+    //   const bodyB = joint.body2()
 
-      const posA = bodyA.translation()
-      const posB = bodyB.translation()
+    //   const posA = bodyA.translation()
+    //   const posB = bodyB.translation()
 
-      const offsetA = joint.anchor1()
-      const offsetB = joint.anchor2()
+    //   const offsetA = joint.anchor1()
+    //   const offsetB = joint.anchor2()
 
-      posVec.copy(posA).add(offsetA)
+    //   posVec.copy(posA).add(offsetA)
 
 
-      positions.set([
-        posVec.x,
-        posVec.y,
-        posVec.z,
-      ], i * 3)
-    }
+    //   positions.set([
+    //     posVec.x,
+    //     posVec.y,
+    //     posVec.z,
+    //   ], i * 3)
+    // }
 
     const geometry = new LineGeometry()
-    geometry.setPositions(positions)
+
+    update()
 
     const lineMesh = new Line2(
       geometry,
-      new LineMaterial({ color: 'white', linewidth: 0.1, worldUnits: true }),
+      new LineMaterial({ color: 'white', linewidth: 0.04, worldUnits: true }),
     )
 
     lineMesh.computeLineDistances()
@@ -544,10 +545,17 @@ function createWreckingballJointChain(
         const posA = bodyA.translation()
         const posB = bodyB.translation()
 
+        const rotA = bodyA.rotation()
+        const rotB = bodyB.rotation()
+
         const offsetA = joint.anchor1()
         const offsetB = joint.anchor2()
 
-        posVec.copy(posB).add(offsetB)
+        // calculate the world position based on the offset and the rotation of the body
+
+        posVec.copy(offsetB).applyQuaternion(new THREE.Quaternion(rotB.x, rotB.y, rotB.z, rotB.w)).add(posB)
+
+        // posVec.copy(offsetB).applyQuaternion(new THREE.Quaternion(rotB.x, rotB.y, rotB.z, rotB.w)).add(posB)
 
 
         positions.set([
