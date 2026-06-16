@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { until, useElementSize, useEventListener } from '@vueuse/core'
 import * as THREE from 'three'
-import { Line2, LineGeometry, LineMaterial, OrbitControls } from 'three/examples/jsm/Addons.js'
+import { Line2, LineGeometry, LineMaterial } from 'three/examples/jsm/Addons.js'
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 
 import * as RAPIER from '@dimforge/rapier3d'
@@ -20,6 +20,11 @@ gsap.registerPlugin(SplitText)
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000)
+
+camera.position.set(-5.522142174561991, 7.949363293383108, 4.0271437136378365)
+
+camera.rotation.set(0.24324402374227236, -0.8300222932618861, 0.18112025641813423)
+
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   alpha:     true,
@@ -76,12 +81,12 @@ async function init() {
   // duck.scale.set(0.01, 0.01, 0.01)
   scene.add(duck)
 
-  const controls = new OrbitControls(camera, renderer.domElement)
+  // const controls = new OrbitControls(camera, renderer.domElement)
 
-  controls.enableDamping = true
-  controls.dampingFactor = 0.1
+  // controls.enableDamping = true
+  // controls.dampingFactor = 0.1
 
-  camera.position.z = 15
+  // camera.position.z = 15
 
   const physics = initPhysics()
 
@@ -90,27 +95,24 @@ async function init() {
   if (ballP) {
     const { body, collider } = ballP
     collider.setDensity(0.1)
-    collider.setRestitution(0)
+    collider.setRestitution(0.5)
     body.recomputeMassPropertiesFromColliders()
     body.setGravityScale(10, true)
-    body.setLinearDamping(0)
-    body.setAngularDamping(0)
+    body.setLinearDamping(5)
+    body.setAngularDamping(5)
   }
 
   duck.userData.physics = ballP
 
-
   physics.chain.appendSegment(0.4, duck.userData.physics.body, 1.2)
   const chainLine = physics.chain.createRopeMesh()
-
 
   // duck.material.transparent = true
   // duck.material.opacity = .6
 
-
   // physics.chain.bodies.splice(physics.chain.bodies.length - 1)
 
-  physics.createFloor(physics.world)
+  // physics.createFloor(physics.world)
 
   const ticker = new THREE.Timer()
   ticker.connect(document)
@@ -125,7 +127,7 @@ async function init() {
 
     renderer.render(scene, camera)
 
-    controls.update()
+    // controls.update()
   }
 
   renderer.setAnimationLoop(step)
@@ -135,7 +137,7 @@ async function init() {
     camera,
     renderer,
     duck,
-    controls,
+    // controls,
     physics,
   })
 
@@ -233,8 +235,8 @@ async function init() {
 
     renderer.dispose()
 
-    controls.disconnect()
-    controls.dispose()
+    // controls.disconnect()
+    // controls.dispose()
 
     scene.clear()
 
@@ -254,7 +256,7 @@ function initPhysics() {
     new THREE.LineBasicMaterial({ color: 0xff0000 }),
   )
   debugMesh.raycast = () => null // disable raycasting on the debug mesh
-
+  debugMesh.visible = false
   scene.add(debugMesh)
 
   const update = () => {
@@ -269,9 +271,12 @@ function initPhysics() {
     geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3))
   }
 
-  const chain = createWreckingballJointChain(world, new THREE.Vector3(0, 15, 0), .25, 15)
+  const chain = createWreckingballJointChain(world, new THREE.Vector3(0, 15, 0), 0.25, 15)
 
   const mouseCollision = createMouseCollision(world)
+
+  mouseCollision.plane.position.set(0, 10, 0)
+
   chain.anim.pause(chain.anim.duration() * 0.5, false)
   return {
     world,
@@ -417,9 +422,9 @@ function createWreckingballJointChain(
         )
 
           .setCanSleep(true)
-          .setAngularDamping(3.21)
+          .setAngularDamping(4.21)
           .setGravityScale(10)
-          .setLinearDamping(3.26),
+          .setLinearDamping(5),
       )
 
     if (previousBody) {
@@ -432,7 +437,9 @@ function createWreckingballJointChain(
       _body.setTranslation({ x: anchor.x, y: anchor.y, z: anchor.z }, true)
     }
 
-    const collider = body?.collider(0) ?? world.createCollider(RAPIER.ColliderDesc.ball(segmentLength * 0.5), _body)
+    const collider =
+      body?.collider(0) ??
+      world.createCollider(RAPIER.ColliderDesc.ball(segmentLength * 0.5), _body)
 
     collider.setFriction(0)
     collider.setRestitution(0)
@@ -494,11 +501,9 @@ function createWreckingballJointChain(
   }
 
   function createRopeMesh() {
-
-
     // positions is a flat array of xyz of each body in the chain, so its length is joints.length + 1 (for the last body) times 3 (for x, y, z)
-    const positions = new Float32Array((joints.length) * 3)
-    const posAttribute = new THREE.Float32BufferAttribute(positions, 3)
+    const positions = new Float32Array(joints.length * 3)
+    // const posAttribute = new THREE.Float32BufferAttribute(positions, 3)
 
     const posVec = new THREE.Vector3()
 
@@ -515,7 +520,6 @@ function createWreckingballJointChain(
 
     //   posVec.copy(posA).add(offsetA)
 
-
     //   positions.set([
     //     posVec.x,
     //     posVec.y,
@@ -529,7 +533,7 @@ function createWreckingballJointChain(
 
     const lineMesh = new Line2(
       geometry,
-      new LineMaterial({ color: 'white', linewidth: 0.04, worldUnits: true }),
+      new LineMaterial({ color: '#cccccc', linewidth: 0.04, worldUnits: true }),
     )
 
     lineMesh.computeLineDistances()
@@ -539,24 +543,26 @@ function createWreckingballJointChain(
     function update() {
       for (let i = 0; i < joints.length; i++) {
         const joint = joints[i]!
-        const bodyA = joint.body1()
+        // const bodyA = joint.body1()
         const bodyB = joint.body2()
 
-        const posA = bodyA.translation()
+        // const posA = bodyA.translation()
         const posB = bodyB.translation()
 
-        const rotA = bodyA.rotation()
+        // const rotA = bodyA.rotation()
         const rotB = bodyB.rotation()
 
-        const offsetA = joint.anchor1()
+        // const offsetA = joint.anchor1()
         const offsetB = joint.anchor2()
 
         // calculate the world position based on the offset and the rotation of the body
 
-        posVec.copy(offsetB).applyQuaternion(new THREE.Quaternion(rotB.x, rotB.y, rotB.z, rotB.w)).add(posB)
+        posVec
+          .copy(offsetB)
+          .applyQuaternion(new THREE.Quaternion(rotB.x, rotB.y, rotB.z, rotB.w))
+          .add(posB)
 
         // posVec.copy(offsetB).applyQuaternion(new THREE.Quaternion(rotB.x, rotB.y, rotB.z, rotB.w)).add(posB)
-
 
         positions.set([
           posVec.x,
@@ -658,7 +664,7 @@ function createMouseCollision(world: RAPIER.World) {
     new THREE.SphereGeometry(0.01, 16, 16),
     new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
   )
-  scene.add(mouseHelper)
+  // scene.add(mouseHelper)
 
   const raycaster = new THREE.Raycaster()
 
