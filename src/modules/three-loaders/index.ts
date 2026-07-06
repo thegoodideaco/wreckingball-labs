@@ -6,5 +6,4 @@ glbLoader.dracoLoader = new DRACOLoader()
 glbLoader.dracoLoader.setDecoderPath('/draco/')
 glbLoader.dracoLoader.setDecoderConfig({ type: 'js' })
 
-
 export const textureLoader = new THREE.TextureLoader()

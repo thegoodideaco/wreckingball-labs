@@ -1,10 +1,7 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 // Dynamically import all .vue files from pages directory and subdirectories
-const pages = import.meta.glob<{ default: any }>(
-  './../views/pages/**/*.vue',
-  { eager: true },
-)
+const pages = import.meta.glob<{ default: any }>('./../views/pages/**/*.vue', { import: 'default' })
 
 /**
  * Convert file path to route path
@@ -42,13 +39,13 @@ function generateRoutes() {
     path,
     module,
   ]) => {
-    const routePath = filePathToRoutePath(path)
+    const routePath = filePathToRoutePath(path).replace(/.+views\//, '/')
     const componentName = path.split('/').pop()?.replace('.vue', '') || 'Page'
 
     return {
       path:      routePath,
       name:      componentName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
-      component: module.default,
+      component: module,
     }
   })
 }
@@ -63,7 +60,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
 

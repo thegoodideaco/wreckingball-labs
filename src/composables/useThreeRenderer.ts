@@ -269,7 +269,7 @@ export class WebGLThreeRenderer extends BaseThreeRenderer<
 export function useThreeRenderer(options: UseThreeRendererOptions = {}): ThreeRenderSystem {
   const system = new WebGLThreeRenderer(options)
 
-  system.addEventListener('onBeforeRender', ev => {
+  system.addEventListener('onBeforeRender', (ev) => {
     console.log(ev)
   })
 

@@ -51,8 +51,6 @@ export class PhysicsEngine {
     this.extractGeometry = extractGeometry
   }
 
-
-
   update() {
     // Update physics simulation here
     this.world.step()
@@ -65,16 +63,18 @@ export class PhysicsEngine {
    * @param options  - { isStatic, shape }
    * @returns        The created PhysicsBody, or null if no geometry could be found.
    */
-  createBody(source: Object3D | BufferGeometry, options: CreateBodyOptions = {}): PhysicsBody | null {
+  createBody(
+    source: Object3D | BufferGeometry,
+    options: CreateBodyOptions = {},
+  ): PhysicsBody | null {
     const { isStatic = false, shape = 'auto' } = options
 
     const geometry = extractGeometry(source)
     if (!geometry) return null
 
     // World-space position from Object3D, or origin for raw geometry
-    const position = source instanceof Object3D
-      ? source.getWorldPosition(new Vector3())
-      : new Vector3()
+    const position =
+      source instanceof Object3D ? source.getWorldPosition(new Vector3()) : new Vector3()
 
     // Build the RigidBodyDesc
     const bodyDesc = isStatic
@@ -97,20 +97,20 @@ export class PhysicsEngine {
         ? new Uint32Array(index.array)
         : Uint32Array.from({ length: vertices.length / 3 }, (_, i) => i)
       colliderDesc = RAPIER.ColliderDesc.trimesh(vertices, indices)
-
     } else if (shape === 'convexHull') {
       // Convex hull – works for dynamic bodies
       const pos = geometry.attributes['position']
       if (!pos) return null
       const vertices = new Float32Array(pos.array)
-      colliderDesc = RAPIER.ColliderDesc.convexHull(vertices) ?? (() => {
-        // Fallback to bounding-box cuboid if convex hull fails
-        geometry.computeBoundingBox()
-        const size = new Vector3()
-        geometry.boundingBox!.getSize(size)
-        return RAPIER.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2)
-      })()
-
+      colliderDesc =
+        RAPIER.ColliderDesc.convexHull(vertices) ??
+        (() => {
+          // Fallback to bounding-box cuboid if convex hull fails
+          geometry.computeBoundingBox()
+          const size = new Vector3()
+          geometry.boundingBox!.getSize(size)
+          return RAPIER.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2)
+        })()
     } else {
       // 'auto' – axis-aligned bounding box cuboid
       geometry.computeBoundingBox()

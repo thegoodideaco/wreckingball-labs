@@ -578,8 +578,6 @@ onMounted(() => {
       return
     }
 
-
-
     world?.createCollider(RAPIER.ColliderDesc.ball(ropeAnchorSize).setDensity(1), body)
 
     const physicsObject = {

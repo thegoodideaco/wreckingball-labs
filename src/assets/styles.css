@@ -1,16 +1,15 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: "neue-haas-grotesk-display";
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: 'neue-haas-grotesk-display';
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   /* ... */
 
   --font-weight: 700;
 }
-
-
-
 
 :root {
   --e-global-color-primary: #202020;
@@ -85,6 +84,10 @@
   --e-preloader-size: 39px;
 }
 
+:root {
+  --aside-width: 16rem;
+}
+
 a {
   @apply text-blue-500 hover:underline;
 }
@@ -95,6 +98,18 @@ html {
   color: var(--e-global-color-text);
 
   min-height: 100%;
+}
+
+html {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    position: relative;
+}
+
+
+body {
+  min-height: 100vh;
 }
 
 #app {

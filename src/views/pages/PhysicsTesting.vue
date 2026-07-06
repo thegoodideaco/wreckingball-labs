@@ -8,22 +8,23 @@ import * as RAPIER from '@dimforge/rapier3d'
 
 import * as loaders from '@/modules/three-loaders'
 
-import matcapImage from '@/assets/img/matcap@2x.webp'
+import matcapImage from '@/assets/img/matcaps/matcap@2x.webp'
 
 import wb_glb from '@/assets/glb/wb.glb?url'
 import VLink from '@/components/VLink.vue'
 import { usePane } from '@/composables/usePane'
 import gsap from 'gsap'
 import { SplitText } from 'gsap/SplitText'
+import type { FpsGraphBladeApi } from '@tweakpane/plugin-essentials'
 
 gsap.registerPlugin(SplitText)
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000)
 
-camera.position.set(-5.522142174561991, 7.949363293383108, 4.0271437136378365)
+camera.position.set(-6.465078304793501, 8.152871972394895, 5.295491579145013)
 
-camera.rotation.set(0.24324402374227236, -0.8300222932618861, 0.18112025641813423)
+camera.rotation.set(0.05630318882413194, -0.6985168448182596, 0.03623004917942865, 'XYZ')
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
@@ -104,6 +105,13 @@ async function init() {
 
   duck.userData.physics = ballP
 
+  // const yellowSphere = new THREE.Mesh(
+  //   new THREE.SphereGeometry(1.9, 26, 26),
+  //   new THREE.MeshBasicMaterial({ color: '#FFAD00', side: THREE.BackSide }),
+  // )
+
+  // duck.add(yellowSphere)
+
   physics.chain.appendSegment(0.4, duck.userData.physics.body, 1.2)
   const chainLine = physics.chain.createRopeMesh()
 
@@ -117,18 +125,52 @@ async function init() {
   const ticker = new THREE.Timer()
   ticker.connect(document)
 
+  let lastFrameTime = 0
+  const targetFrameTime = 1 / 60 // 60 FPS cap
+
   function step() {
+
+    if(document.visibilityState === 'hidden') {
+      return
+    }
+
     ticker.update()
 
+    const delta = ticker.getDelta()
+    const currentTime = performance.now()
+    const elapsed = currentTime - lastFrameTime
+
+    if(elapsed < targetFrameTime) {
+      console.warn('Skipping physics step due to frame time being too short:', elapsed)
+    }
+
+    lastFrameTime = currentTime
+
+    // if(delta > 0 && delta < 0.1) {
+    //   // physics.world.timestep = delta
+    // } else {
+    //   console.warn('Delta time is too large or too small, skipping physics step:', delta)
+    //   return
+    // }
+
+    pane.fpsGraph.begin()
+
+
+
+
     physics.world.step()
+    // physics.world.timestep = delta
     physics.update()
     chainLine.update()
     physics.syncMeshWithBody(duck, duck.userData.physics.body)
 
     renderer.render(scene, camera)
 
+    pane.fpsGraph.end()
     // controls.update()
   }
+
+  const pane = setupDebug()
 
   renderer.setAnimationLoop(step)
 
@@ -137,12 +179,11 @@ async function init() {
     camera,
     renderer,
     duck,
-    // controls,
     physics,
   })
 
   function setupDebug() {
-    const pane = usePane({
+    const { pane, dispose } = usePane({
       title: 'Wreckingball Labs Debug',
     })
 
@@ -223,9 +264,18 @@ async function init() {
       max:   10,
       step:  0.01,
     })
-  }
 
-  setupDebug()
+    const fpsGraph = pane.addBlade({
+      view:  'fpsgraph',
+      label: 'fpsgraph',
+    }) as FpsGraphBladeApi
+
+    return {
+      fpsGraph,
+      pane,
+      dispose,
+    }
+  }
 
   /**
    * Cleanup function to dispose of Three.js resources and event listeners when the component is unmounted
@@ -234,6 +284,8 @@ async function init() {
     renderer.setAnimationLoop(null)
 
     renderer.dispose()
+
+    pane.dispose()
 
     // controls.disconnect()
     // controls.dispose()
@@ -302,6 +354,7 @@ function createFloor(world: RAPIER.World) {
     new THREE.BoxGeometry(20, 1, 20),
     new THREE.MeshPhongMaterial({ color: 0x808080 }),
   )
+
   floorMesh.position.set(0, 0, 0)
   scene.add(floorMesh)
 
@@ -638,6 +691,17 @@ async function animate() {
     mask: 'words',
   })
 
+  const wordContainer = overlayElement.value!.querySelector('h1')
+
+  timeline.to(
+    wordContainer,
+    {
+      autoAlpha: 1, // fade in the container first
+      duration:  0.4,
+    },
+    0,
+  )
+
   // now animate the characters in a staggered fashion
   return await timeline.from(
     split.words,
@@ -648,7 +712,7 @@ async function animate() {
       stagger:   0.1, // 0.05 seconds between each
       ease:      'elastic.out(2, 0.45)', // elastic ease for a bouncy effect
     },
-    2,
+    0.2,
   )
 }
 
@@ -672,10 +736,22 @@ function createMouseCollision(world: RAPIER.World) {
   world.createCollider(RAPIER.ColliderDesc.ball(0.01), mouseBody)
 
   mouseBody.enableCcd(true)
-  renderer.domElement.addEventListener('mousemove', (event) => {
+
+  function onMouseMove(event: MouseEvent | TouchEvent) {
+    let offsetX: number = 0,
+      offsetY: number = 0
+
+    if (event instanceof MouseEvent) {
+      offsetX = event.offsetX
+      offsetY = event.offsetY
+    } else if (event instanceof TouchEvent) {
+      offsetX = event.touches[0]!.clientX - containerElement.value!.getBoundingClientRect().left
+      offsetY = event.touches[0]!.clientY - containerElement.value!.getBoundingClientRect().top
+    }
+
     const mouse = new THREE.Vector2(
-      (event.offsetX / renderer.domElement.clientWidth) * 2 - 1,
-      -(event.offsetY / renderer.domElement.clientHeight) * 2 + 1,
+      (offsetX / renderer.domElement.clientWidth) * 2 - 1,
+      -(offsetY / renderer.domElement.clientHeight) * 2 + 1,
     )
 
     raycaster.setFromCamera(mouse, camera)
@@ -701,7 +777,13 @@ function createMouseCollision(world: RAPIER.World) {
     }
 
     // console.log(intersects)
-  })
+  }
+
+  if ('ontouchstart' in window) {
+    renderer.domElement.addEventListener('touchmove', onMouseMove)
+  } else {
+    renderer.domElement.addEventListener('mousemove', onMouseMove)
+  }
 
   scene.add(plane)
 
@@ -727,11 +809,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div ref="containerElement" class="w-full h-full absolute"></div>
+    <div ref="containerElement" class="w-full h-full absolute container-element"></div>
 
-    <div class="overlay" ref="overlayElement">
-      <div class="inline-block">
-        <h1 class="text-6xl font-bold max-w-2xl">
+    <div class="overlay w-full h-full" ref="overlayElement">
+      <div class="overlay-hero">
+        <h1 class="text-6xl font-bold max-w-2xl opacity-0">
           Hello! welcome to <strong class="text-yellow-500">Wreckingball Labs</strong>
         </h1>
         <VLink href="/content"> Play </VLink>
@@ -743,9 +825,18 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 ::v-deep(canvas) {
   display: block;
-  background: url('@/assets/img/grid.webp') repeat fixed;
+  // z-index: 1;
   position: absolute;
   width: 100%;
   height: 100%;
+}
+
+.container-element {
+  background: url('@/assets/img/grid.webp') repeat fixed;
+}
+
+.overlay {
+  // position: absolute;
+  // z-index: 10;
 }
 </style>

@@ -10,7 +10,7 @@ const router = useRouter()
 </script>
 
 <template>
-  <aside class="page-sidebar">
+  <div class="side-menu__content min-h-full">
     <div class="page-logo">
       <a
         href="#"
@@ -21,7 +21,6 @@ const router = useRouter()
           src="@/assets/img/wrecking-ball-logo-light-bg.webp"
           alt="Wreckingball Labs"
           aria-roledescription="logo" />
-
         <i class="fal fa-angle-down inline-block ml-1 fs-lg color-primary-300"></i
       ></a>
     </div>
@@ -32,7 +31,8 @@ const router = useRouter()
         </li>
       </ul>
     </nav>
-  </aside>
+  </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>

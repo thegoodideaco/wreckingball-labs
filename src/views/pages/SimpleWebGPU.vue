@@ -4,7 +4,7 @@ import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addon
 import * as THREE from 'three/webgpu'
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 
-import matcapImage from '@/assets/img/matcap@2x.webp'
+import matcapImage from '@/assets/img/matcaps/matcap@2x.webp'
 
 import wb_glb from '@/assets/glb/wb.glb?url'
 import wb_glb_points from '@/assets/glb/wb-points.glb?url'

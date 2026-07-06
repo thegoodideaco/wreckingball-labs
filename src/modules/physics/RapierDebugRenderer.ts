@@ -8,7 +8,10 @@ export class RapierDebugRenderer {
 
   constructor(scene: THREE.Scene, world: RAPIER.World) {
     this.world = world
-    this.mesh = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 'lime' }))
+    this.mesh = new THREE.LineSegments(
+      new THREE.BufferGeometry(),
+      new THREE.LineBasicMaterial({ color: 'lime' }),
+    )
     this.mesh.frustumCulled = false
     scene.add(this.mesh)
   }

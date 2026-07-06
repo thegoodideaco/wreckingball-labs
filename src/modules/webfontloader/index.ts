@@ -3,7 +3,7 @@ import WebfontLoader from 'webfontloader'
 
 export const fontsLoaded = ref(false)
 
-const icons = [
+const _icons = [
   'app_shortcut',
   'close',
   'closed_caption',
@@ -29,11 +29,7 @@ const icons = [
   'menu',
 ].sort()
 
-
-
-
 WebfontLoader.load({
-
   custom: {
     families:    ['neue-haas-grotesk-display'],
     urls:        ['https://use.typekit.net/kiw1gew.css'],

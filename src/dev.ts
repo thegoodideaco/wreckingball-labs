@@ -16,11 +16,11 @@ import { useTicker } from './composables/useTicker'
 import * as physics from '@/modules/physics'
 import { loadJSONFromFile } from './utils/loadJSONFromFile'
 
-
 //@ts-expect-error there are no definitions for this module, but it exists and works fine
 import * as tslTextures from 'tsl-textures/tsl-textures.js'
 
 import cf from 'crossfilter2'
+import { loadRandomMatcapTexture } from './utils/swapMatcap'
 
 function htmlTableToMarkdown(tableInput: string | HTMLTableElement): string {
   // Accept either HTML string or DOM element
@@ -70,4 +70,5 @@ export default {
   loadJSONFromFile,
   cf,
   tslTextures,
+  loadRandomMatcapTexture,
 }
